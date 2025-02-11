@@ -1,0 +1,1000 @@
+ 
+
+   
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+Condor Computing Specification 
+
+Cuzco Processor Core 
+
+Microarchitecture 
+
+Version 0.21 
+
+Based on Thang Tran’s SimplexMicro Version 1.4  
+
+ 
+
+This document is exclusive property of Condor Computing Inc. and shall not be distributed, reproduced, or 
+disclosed in whole or in part without prior written permission of Condor Computing Inc.  
+July 11, 2023 
+
+ 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+CONTENTS 
+
+MISS-REQUEST QUEUE (MRQ) WITH DMQ AND DEQ ...................................................................................... 120 
+ 
+
+ 
+
+ 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               2 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+List of Tables 
+TABLE 2-1. SRAM ARRAY SIZES ............................................................................................................................ 15 
+TABLE 3-1. FRONT-END EXCEPTION LISTING ............................................................................................................ 22 
+TABLE 3-2. LOAD-STORE EXCEPTION LISTING ........................................................................................................... 27 
+TABLE 4-1. BTB BIT FIELDS .................................................................................................................................. 39 
+TABLE 4-2 BRANCH TYPE AND PREDICTED DIRECTION SOURCE .................................................................................... 39 
+TABLE 4-4. RETURN STACK BIT FIELDS .................................................................................................................... 45 
+TABLE 4-5. BPQ BIT FIELDS ................................................................................................................................. 51 
+TABLE 4-6. BRANCH PREDICTION AND EXECUTION .................................................................................................... 57 
+TABLE 5-1. ITQ ENTRY BIT FIELDS ......................................................................................................................... 79 
+TABLE 5-2. IMQ BIT FIELDS ................................................................................................................................. 80 
+TABLE 5-3. ICQ BIT FIELDS................................................................................................................................... 82 
+TABLE 6-1. ROB BIT FIELDS ................................................................................................................................. 94 
+TABLE 6-2. REGISTER SCOREBOARD BIT FIELDS ...................................................................................................... 100 
+TABLE 6-3. GREATER-THAN COMPARATOR FOR TIME A AND B ................................................................................. 104 
+TABLE 6-4. READ TIMES CALCULATION FOR 3 INSTRUCTIONS ..................................................................................... 105 
+TABLE 8-1. XEQ BIT FIELDS ................................................................................................................................ 116 
+TABLE 8-2. DATA BIT FIELDS FOR ARITHMETIC AND BRANCH XEQ ............................................................................. 117 
+TABLE 8-3. LOAD/STORE XEQ WITH ADDITIONAL BIT FIELDS.................................................................................... 119 
+TABLE 10-1. LSU CONFIGURATION PARAMETERS ................................................................................................... 123 
+TABLE 10-2. STB BIT FIELDS .............................................................................................................................. 130 
+TABLE 10-3. LDB BIT FIELDS .............................................................................................................................. 134 
+TABLE 10-4. MRQ BIT FIELDS ............................................................................................................................ 136 
+
+ 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               3 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+List of Figures 
+FIGURE 3-1 HIERARCHICAL RTL MODULES .............................................................................................................. 18 
+FIGURE 4-1 IFU AND BPU PIPELINE ....................................................................................................................... 28 
+FIGURE 4-2 BTB PREDICTION WITH PAGE BUFFER BLOCK DIAGRAM ............................................................................ 32 
+FIGURE 4-3 ILLUSTRATION OF BASIC BLOCKS ............................................................................................................ 34 
+FIGURE 4-4 LARGE AND SMALL BASIC BLOCKS.......................................................................................................... 35 
+FIGURE 4-5 BASIC BLOCK EXAMPLE 1 ..................................................................................................................... 36 
+FIGURE 4-6 BASIC BLOCK EXAMPLE 2 ..................................................................................................................... 37 
+FIGURE 4-7 BASIC BLOCK EXAMPLE 3 ..................................................................................................................... 37 
+FIGURE 4-8 BASIC BLOCK WITH LOOP PREDICTION .................................................................................................... 42 
+FIGURE 4-9 COMBINING MULTIPLE BASIC BLOCKS INTO LOOP PREDICTION ................................................................... 43 
+FIGURE 4-10 GHT ARRAY .................................................................................................................................... 44 
+FIGURE 4-11 EXAMPLE OF RECURSIVE CALLS ........................................................................................................... 45 
+FIGURE 4-12 EXAMPLE 1: 4 CALLS AND 4 RETURNS WITH ALL BTB MISS AND BRANCH MISPREDICTION ............................. 47 
+FIGURE 4-13 EXAMPLE 2: 4 CALLS AND 4 RETURNS WITH ALL BTB HITS AND CORRECT BRANCH PREDICTIONS .................... 48 
+FIGURE 4-14 EXAMPLE 3: 4 CALLS AND 4 RETURNS AND ADDITIONAL JUMP, ALL BTB MISSES .......................................... 49 
+FIGURE 4-15 EXAMPLE 4: 4 CALLS AND 4 RETURNS WITH ALL BTB HITS AND ADDITIONAL JUMPS WITH MISPREDICTION ........ 50 
+FIGURE 4-16 FRONT-END PIPELINE ........................................................................................................................ 53 
+FIGURE 4-17 EXAMPLE 1, BASIC BLOCK WITH MORE THAN 2 CACHE LINES..................................................................... 54 
+FIGURE 4-18 EXAMPLE 2, BASIC BLOCK WITH 2 CACHE LINES ...................................................................................... 54 
+FIGURE 4-19 EXAMPLE 2, BASIC BLOCK WITH SINGLE CACHE LINE ................................................................................ 55 
+FIGURE 5-1 STATE MACHINE FOR READING OF THE TAG ARRAYS ................................................................................. 79 
+FIGURE 5-2 WRITING CACHE LINE DATA INTO ICQ ................................................................................................... 82 
+FIGURE 5-3 READING OF 4 INSTRUCTIONS (UP TO 8 ENTRIES) FROM ICQ ..................................................................... 83 
+FIGURE 5-4 ICQ LOOP IMPLEMENTATION ............................................................................................................... 84 
+FIGURE 5-5 TLB BLOCK DIAGRAM ......................................................................................................................... 85 
+FIGURE 5-6 INSTRUCTION TLB BLOCK DIAGRAM ...................................................................................................... 86 
+FIGURE 6-1 IDU PIPELINE .................................................................................................................................... 88 
+FIGURE 6-2 MODULAR DESIGN OF SINGLE AND DUAL INSTRUCTION MODULES .............................................................. 90 
+FIGURE 6-3 READ AND WRITE DATA PATHS FROM PRF ............................................................................................. 92 
+FIGURE 6-4 EXAMPLE OF REGISTER RENAMING ........................................................................................................ 99 
+FIGURE 6-5 EXAMPLE OF RESTORING THE RTL AND RAT ......................................................................................... 100 
+FIGURE 6-6 TIME-RESOURCE MATRIX FOR AVAILABILITIES OF RESOURCE FOR ISSUING A SINGLE INSTRUCTION ................... 106 
+FIGURE 6-7 TIME-RESOURCE MATRIX FOR AVAILABILITIES OF RESOURCE FOR ISSUING DUAL INSTRUCTION ....................... 107 
+FIGURE 6-8 INSTRUCTION SLICES FOR 8-ISSUE MICROPROCESSOR.............................................................................. 108 
+FIGURE 6-9 ONE READ PORT QUEUE (RPQ) ......................................................................................................... 112 
+FIGURE 6-10 ONE WRITE PORT QUEUE (WPQ) .................................................................................................... 113 
+FIGURE 8-1 THE ALU XEQ WITH OOO EXECUTION ................................................................................................ 115 
+FIGURE 8-2 REPLAY OF DEPENDENT INSTRUCTION .................................................................................................. 118 
+FIGURE 10-1 LSU DATA PATH – INCLUDING REPLAY ............................................................................................... 124 
+FIGURE 10-2 LOAD DATA ALIGNMENT MODULE .................................................................................................... 128 
+
+ 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               4 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+1  Document Information 
+
+1.1  Preface 
+
+This document describes the high-level specification of a scalable RISC-V processor core 
+microarchitecture.  The important features of this processor microarchitecture are: 
+
+• 
+
+• 
+
+• 
+
+Time-based speculative instruction issue:  a continuously running time count used by all 
+instructions which are issued at preset or adjusted times in reference to the time count. 
+Configurations: decoding for RISC-V standard and extension ISA, scalable 2-instruction slices, 
+SRAM arrays for all queues, physical registers, and re-order buffers 
+Three target markets: automotive, AR/VR, and cloud acceleration 
+
+•  New design methodology: system Verilog, verification and backend tools for configurations 
+• 
+
+Innovative algorithm for out-of-order superscalar microprocessor design, which can be extended 
+to floating-point, vector, and neural network (NN) accelerator designs 
+
+Microprocessors have become more and more complex to chase small increments in performance at the 
+expense of power and area. The microarchitecture approach used in OOO superscalar microprocessors 
+has remained basically the same for the last 30 years. In this common approach much of the power 
+dissipation is from the dynamic scheduling of instructions for execution from reservation stations or 
+similar mechanisms. Fetch block microarchitecture with branch prediction has been similarly consistent.  
+Since VLIW microarchitectures died from their required compiler complexity and insufficient 
+performance, no major change is has occurred in microprocessor design. Significant innovation has 
+disappeared, replaced by the “NIH” (Not Invented Here) syndrome throughout the microprocessor world.  
+
+The microprocessor designs for recent generations for PC/laptop and smart tablet/phone have heavily 
+depended on multiple cores to scale system performance. With the new markets and the new widely 
+adopted free RISC-V instruction set, the opportunity for extensible and configurable microprocessors has 
+arrived. A new approach in microprocessor design is needed with the following attributes: 
+
+• 
+
+Simplicity 
+•  Modular 
+• 
+
+Programmable features: configurable and extensible 
+
+•  Vector processing extension 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               5 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+1.2  Revision History 
+
+Revision 
+
+Date 
+
+Changed Sections 
+
+Summary of Changes 
+
+04/04/2023  All 
+
+SimplexMicro - Final review 
+
+1.0 
+
+1.1 
+
+Author 
+
+Thang Tran 
+
+05/25/2023 
+
+3.3.2 
+
+Add section for writing of mispredicted branch into BTB 
+
+Thang Tran 
+
+1.2 – 1.4 
+
+06/28/2023  All 
+
+Edit for clarity of text 
+
+Edmund Gieske 
+
+0.0-0.01 
+
+07/11/2023  All 
+
+Starting point for Cuzco based on SimplexMicro 1.4 
+
+Edmund Gieske 
+
+0.1 
+
+11/21/2023 
+
+ 
+
+(Pulled in the following changes) 
+
+SimplexMicro 1.5: More info on loop prediction, ROB 
+handling of branch prediction, greater-than compare of 
+times in RSB, steps when partial number of instructions 
+are issued, store-to-load forwarding in details 
+
+SimplexMicro 1.6: Add new chapter for CSR and FPU (high 
+level) 
+
+SimplexMicro 1.7: Add more details for interrupt and 
+exceptions. Examples for return stack and register 
+renaming 
+
+Shashank 
+Nemawarkar 
+
+0.2 
+
+11/25/2023 
+
+5.4, 5.5, 5.8, 6.4 
+
+Implementation details, Unknown replay, LDB,  
+
+Thang Tran 
+
+0.121 
+
+ 
+
+3.2.3, 4.4.5 
+
+Reconciled v0.1 changes—Exceptions and interrupts, 
+Return Stack, 
+
+Shashank 
+Nemawarkar 
+
+ 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               6 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+1.3  Conventions and Terminology 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               7 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+Label 
+
+CPU  
+
+ISA 
+
+OoO 
+
+ALU 
+
+AGU 
+
+FPU 
+
+IC 
+
+DC 
+
+BTB 
+
+BEU 
+
+GHT 
+
+GHR 
+
+BPU 
+
+BPQ 
+
+BPB 
+
+IQ 
+
+IMQ 
+
+ITQ 
+
+ICQ 
+
+XIQ 
+
+PLRU 
+
+MMU 
+
+RS 
+
+TOS 
+
+TLB 
+
+Description 
+
+Central Processing Unit 
+
+Instruction Set Architecture 
+
+Out-of-Order 
+
+Arithmetic and Logical Unit 
+
+Address Generation Unit 
+
+Floating-Point Unit 
+
+Instruction Cache 
+
+Data Cache  
+
+Branch Target Buffer 
+
+Branch Execution Unit 
+
+Global History Table 
+
+Global History Register 
+
+Branch Prediction Unit 
+
+Branch Prediction Queue 
+
+BTB Page Buffer 
+
+Instruction Queue 
+
+Instruction Miss Queue 
+
+Instruction Tag Queue 
+
+Instruction Cache Queue 
+
+Scalar Instruction Queue 
+
+Pseudo Least Recently Used 
+
+Memory Management Unit 
+
+Return Stack 
+
+Top of Stack 
+
+Translation Look-aside Buffer 
+
+L2TLB 
+
+Level-2 Translation Look-aside Buffer 
+
+PC 
+
+IDU 
+
+LSU 
+
+STB 
+
+LDB 
+
+DBQ 
+
+MRQ 
+
+DMEQ 
+
+DMQ 
+
+DEQ 
+
+Program Counter 
+
+Instruction Decode Unit 
+
+Load Store Unit 
+
+Store Buffer 
+
+Load Buffer 
+
+Data Bank Queue 
+
+Miss Request Queue 
+
+Data Miss and Eviction Queues 
+
+Data Miss Queue 
+
+Data Eviction Queue 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               8 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+ECC 
+
+RAW 
+
+WAW 
+
+WAR 
+
+CSR 
+
+ROB 
+
+RSB 
+
+TRM 
+
+RPQ 
+
+WPQ 
+
+RFL 
+
+RAT 
+
+ART 
+
+ARF 
+
+GPR 
+
+PRF 
+
+XRF 
+
+FRF 
+
+x0-x31 
+
+r0-r127 
+
+f0-f31 
+
+X0/x0 
+
+XEQ 
+
+LS XEQ 
+
+FPEQ 
+
+PMA 
+
+PMP 
+
+SIMD 
+
+FLEN 
+
+Error Correcting Code 
+
+Read-After-Write data dependency 
+
+Write-After-Write data dependency 
+
+Write-After-Read data dependency 
+
+Control and Status Register 
+
+Re-Order Buffer 
+
+Register Scoreboard 
+
+Time-Resource Matrix 
+
+Read Port Queue 
+
+Write Port Queue 
+
+Register Free List 
+
+Register Alias Table 
+
+Architectural Register Table 
+
+Architectural Register File 
+
+General Purpose Register 
+
+Physical Register File 
+
+Integer Register File 
+
+Floating-point Register File 
+
+Scalar registers 
+
+Physical registers 
+
+Floating-point registers 
+
+X0 is the pipeline stage and x0 are the registers 0 
+
+Scalar Execution Queue 
+
+Load/Store Execution Queue 
+
+Floating-point Execution Queue 
+
+Physical Memory Attribute 
+
+Physical Memory Protection 
+
+Single Instruction Multiple Data 
+
+Floating-point Length in bits (power of 2) 
+
+Byte and bit 
+
+32B = 32 bytes, 32b = 32 bits, 32KB = 32 kilo bytes 
+
+Data size 
+
+Byte = 8-bit, Half-word = 16-bit, Word = 32-bit, Double-word = 64-bit, Quad-word = 128-bit 
+
+Configurable 
+
+Parameters to be set at built time 
+
+Programmable 
+
+Parameters can be programmed through CSR 
+
+Issue 
+
+Dispatch 
+
+Complete 
+
+Instruction/data are issued from a queue 
+
+Instruction/data are dispatched to the VIQ queue 
+
+Instruction is completed and data is written back to register file.  Example: arithmetic instruction is 
+completed by writing result data to PRF, but can be cancelled by branch misprediction.  
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               9 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+ 
+
+Commit 
+
+Retire 
+
+Queue 
+
+Buffer 
+
+Instruction is committed, PC is incremented, all earlier branches are completed. Example: store instruction 
+writes data to data cache only when all earlier branches are completed and all earlier load/store 
+instructions are committed (can be cache miss with pending data) 
+
+When the instruction is retired from the ROB. Example: cache miss load instruction can be retired without 
+writing load data to PRF, the bus error or L2 ECC error is imprecise exception.  The RSB keeps track of 
+writing load data to the PRF and stall RAW instructions 
+
+Storage of data with many entries, mostly (but not all) FIFO structure 
+
+Storage of data with many entries, input/output to the buffers are out-of-order 
+
+1.4  Related Documents 
+
+Title 
+
+Link 
+
+Description 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+1.5  Notes/Open Issues 
+
+Tables 9-3 & 9-4 have the same name “MRQ Bit Fields”. 
+
+Many instances of random styles remain. 
+
+ 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               10 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+2  Overview 
+
+This document is the MicroArchitecture Specification (MAS) of a processor based on the RISC-V ISA.  The 
+purpose of this specification is to provide a general description of the overall microarchitecture for the 
+implementation of out-of-order superscalar microprocessors. Processors have become increasingly 
+complex chasing small increments in performance at the expense of power consumption and 
+semiconductor chip area.  The approach in designing out-of-order (OOO) superscalar microprocessors has 
+remained basically the same for the last 30 years, with much of the power dissipation attributable to the 
+dynamic scheduling of instructions for execution from reservation stations or central windows.  Designing 
+an OOO superscalar microprocessor is a huge undertaking.  Hundreds of instructions are dispatched into 
+the execution pipeline where the data and resource (e.g., register file read ports, forwarding busses, 
+functional execution units) dependencies are resolved and arbitrated using complicated priority schemes 
+to ensure optimal performance.  Further arbitration may occur as result data from the functional units 
+later arbitrate for the register file write buses.  If the data cannot immediately be written back to the 
+register file, then the result data are kept in temporary registers adding the complication of backpressure 
+to the determination of functional unit availability.  The temporary registers are added to result data 
+forwarding and to scheduling of dynamic instructions.  Another desirable but elusive processor 
+microarchitecture attribute is scalability.  Despite repeated efforts in design reuse, each generation of 
+microprocessor has required much effort to move from scalar, to 2-wide, 4-wide, 5-wide, … A truly 
+scalable processor microarchitecture does not yet exist. 
+
+The Cuzco processor architecture solves the above problems with a revolutionary innovation toward a 
+“plan ahead” mechanism: 
+
+• 
+
+• 
+
+• 
+
+The time concept, employing a free running time counter, to schedule instruction execution at a 
+“plan ahead” time in reference to the time count 
+The “plan ahead” is partially based on the performance model concept where each new instruction 
+has a perfect or oracle view of all previous instructions including their exact time of execution.   
+The latest evolution of the register scoreboard (RSB) to keep track of write times of destination 
+registers.  All instructions have fixed throughput and latency times, so in principle, when an 
+instruction is in the decode stage, the issue logic can pre-determine the exact execution time before 
+sending the instruction to the appropriate execution issue queue.  The RSB technique goes back to at 
+least the CDC6600 and has continued to evolve from Thang Tran’s dissertation in 1991 to the ARM 
+Cortex-A8 and the vector processor of NX27V. 
+
+•  Another important concept is the time-resource matrix (TRM) in which a 2-dimensional matrix of 
+
+• 
+
+time and functional resources indicate the availability of the resources with respect to time.  In a way, 
+this is the time scoreboard for various resources. 
+Time-resource matrices are grouped into 1-instruction or 2-instruction slices.   Each slice includes the 
+time-resource matrices, the execution queues, the functional units, a load/store port, and the read 
+and write ports to the register file.  The design of a slice is simpler for both timing and logic.  
+Processor scalability is based on combinations of slices to create any desired issue width.  Note that 
+the amount of certain functional units might be overprovisioned but the routing complexity is 
+minimized which matches technology scaling. 
+
+Time (clock) concept: A time counter is used to indicate the current time in the processor.  It is a rotating 
+counter. All times in the processor are relative to this time count. For example, if the time count is 22, and 
+an instruction will be executed and written back to PRF in 5 clock cycles, then the time set for the 
+instruction is 27, when the time count is 27, the instruction will be executed and write back to PRF.  The 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               11 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+write time (27) of pending destination register in execution pipeline are recorded in the register 
+scoreboard which is the read time for RAW dependent instructions.  The time-resource matrices are used 
+to record the busy status of the resources in the future. If the instruction is free of RAW data dependency 
+and the resources are available, then the instruction is issued with preset execution time. The 
+combination of RSB and TRM provides the time view of all previous instructions which have been 
+scheduled for execution. Put differently, the “plan ahead” scheduling using the RSB and TRM enable the 
+usually complex and power intensive wakeup and selection of instructions among all those in the issue 
+queue(s) to be simplified into a single equality comparison with the current time.  
+
+Out-of-order execution concept: Conditions for execution instructions regardless of instruction ordering: 
+
+• 
+
+Free of data dependency, in this case, only RAW (renaming handles WAW and WAR) which based 
+on the RSB 
+
+•  Availability of read bus(es) to read data from the PRF 
+•  Availability of functional unit to execute the instruction 
+•  Availability of write bus to write data to the PRF 
+
+The goal for this project is the best PPA (performance includes both IPC and clock frequency) for range of 
+configurations for high end compute applications. The microprocessor includes the extensible 
+instructions, both custom and standard extensible instructions such as multiply, divide, floating point, 
+DSP, and vector. The objectives of the design are listed below: 
+
+• 
+
+Configurability: necessary for IP to attract a wide range of customers. The RISC-V ISA allows 
+custom extensible instructions which are added by customers. This enables customers to create 
+proprietary capabilities and end-product differentiation 
+
+o  Tools such as lint should be adapted to such configurability. Fixing a bug in one 
+
+o 
+
+configuration should not break lint in other configurations 
+Simple regression code for all configurations should be continually running in the 
+background 
+
+• 
+
+Scalability: This is also part of the configurability.  The design parameters can be modified for 
+specific application performance:  
+
+o  Configurable number of instruction-slices 
+o  Extensive use of local parameters for scalability where local parameters are from an 
+
+Excel table 
+
+• 
+
+Low power and area: necessary for embedded market 
+
+o  Multiple levels (4-6) of clock gating 
+o  Plan-ahead scheduling of instructions: preset exact time for read ports, write ports, and 
+
+execution time by specific functional unit 
+
+• 
+
+• 
+
+Performance: out-of-order execution provides the highest possible performance 
+Simplicity:  It is the most difficult to have a simple design with highest performance: 
+
+o 
+
+Innovative yet simple pipeline control using scoreboard and time-resource matrices 
+Issued instructions are “fire-and-forget” replayed only by issue logic 
+
+o 
+o  Excel work sheet used to generate RTL, define parameters, instruction decode and state 
+
+machine – easy to modify and simple to debug 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               12 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+2.1  Features 
+
+The plan-ahead scheduling algorithm is based on the known latency and throughput times of the 
+instructions.  Each issued instruction has 3 associated times: (1) read time to fetch data from register file 
+to the execution unit, (2) execution time is 1 cycle later, and (3) write time to write result data back to the 
+register file.  The write time is the latency time of the instruction added to the read time.  Load 
+instructions use DC hit latency as their execution time.  For an instruction with a RAW data dependency 
+on a prior instruction, the read time of the dependent instruction is the write time of the prior instruction 
+as recorded in the RSB.  This “plan-ahead” algorithm is very power efficient in comparison to the dynamic 
+scheduling. The SM processor microarchitecture focuses on the pipeline execution and control for various 
+type of instructions: 
+
+• 
+
+Time is from a 5 to 7 bits time counter, (i.e., 32 to 128 time counts) 
+
+•  RV64IAM is implemented as the basic ISA.  The data width is configurable and can be replaced 
+
+• 
+
+• 
+
+• 
+
+• 
+
+• 
+
+• 
+
+with RV32IAM 
+1-8 wide OOO superscalar microprocessor. A 1-wide OOO microprocessor can outperform a 2-
+wide in-order microprocessor.  The RTL design consists of modular 1-instruction and 2-instruction 
+slices. 
+The resources (buses and functional units) in the 1-wide slice: 2 read ports, 1 write port, 1 ALU, 1 
+BRN, 1 LS port, and the extensible functional units MUL and DIV.  Note that DC tag array is 
+duplicated for each LS port 
+The resources (buses and functional units) in the 2-wide slice: 4 read ports, 2 write ports, 2 ALU, 
+1 BRN, 1 LS port, and the extensible functional units MUL and DIV.  Note that DC tag array is  
+duplicated for each LS port 
+The TRMs are designed for the above 1-wide and 2-wide slices 
+The execution queues (XEQ) are designed for the above 1-wide and 2-wide slices. The number of 
+entries in the XEQ is configurable (2, 4, 8, 16) based on the functional unit types.  The XEQ 
+consists of the instruction read time to issue instruction to the functional units.  The instruction 
+can be replayed by modifying the read time of the instruction in the XEQ 
+The RSB records the write times of instructions with valid destination registers.  The RSB has 
+same number of entries as the PRF. The number of registers in the PRF is configurable 
+
+•  Register renaming is used to avoid WAW and WAR data dependency while RAW is handled by 
+
+RSB 
+
+•  ROB is used to allow OOO branch and load execution 
+• 
+
+“Fire-and-forget” execution, instructions once issued will be executed and the results may be 
+discarded if the instructions are replayed or cancelled by branch misprediction or 
+interrupt/exception 
+The DC data array has configurable number of banks to minimize bank conflicts 
+ECC or Parity is implemented for all caches and other large bit-cell array structures (e.g., L2 TLB) 
+•  Advanced basic-block branch prediction unit (BPU) along with loop prediction (a natural part of 
+
+• 
+
+• 
+
+the basic block branch prediction) are implemented 
+L2/L3 cache is configured to be implemented as back-side L2, shared L2, and shared L3. 
+Coherency should be implemented in L2/L3 cache to minimize DC tag contention 
+PMA/PMP, iTLB (small), dTLB (small), and L2 TLB are accessed prior to tag array to avoid address 
+aliasing 
+4-5 levels of hierarchical clock gating 
+
+• 
+
+• 
+
+• 
+
+Condor Computing Inc., 2023, <DRAFT> – <HIGHLY CONFIDENTIAL>                                               13 
+
+Cuzco Microarchitecture Specification, v0.2 
+
+ 
+
+ 
+
+2.2  Design Configurations 
+
+All configuration parameters are set in an Excel file which is converted to the defines.vh file.  
+Configuration is performed and fixed at RTL generation time and cannot change during run time: 
+
+•  Number of instructions: 1-8, 4 (default),  
+
+• 
+
+• 
+
+Instruction cache size: 8KB, 16KB, 32KB (default), 64KBData cache size: 8KB, 16KB, 32KB (default), 
+64KB 
+Cache line size: 128b, 256b (default), 512b, 1024b 
+
+•  Bus width: 128b, 256b (default), 512b 
+• 
+
+L2 TLB size: 512, 1K (default), 2K, 4K 
+TLB translation: on, off (default) 
+
+• 
+
+•  Branch target buffer size: 1K, 2K, 4K, 8K  (default) 
+•  BTB page buffer:  32, 64, 128 (default), 256 
+•  Branch history table size: 2K, 4K, 8K, 16K (default) 
+•  All arrays error detection: none (default), ECC, parity-per-byte 
+
+The design configuration is based on performance model for the optimal performance which is different 
+than the customer-built configuration.  Note: in most cases, the queue full is part of the performance 
+monitors and verification and should be printed out in order to check for unpredictable conditions; the 
+RS, BPQ, XEQ, STB, LDB, MRQ, IMQ, DMQ, DEQ, ROB, and RFL.  The initial list of design configuration 
+which should be validated by performance: 
+
+•  Global history register (GHR): 10-bit 
+•  Return Stack (RS): 8 (default), 12, 16 entries 
+•  Branch prediction queue (BPQ): 8, 16 (default), 32 entries 
+• 
+
+• 
+
+• 
+
+• 
+
+• 
+
+Instruction tag queue (ITQ) and Instruction miss queue (IMQ): 4 entries of each cache line 
+Instruction prefetch queue (IPB): 1 entry of cache line size 
+Instruction cache queue (ICQ) entry: 16 entries of 16-bit instructions (same as cache line size) 
+Integer instruction queue () entry: 8 (2X issue width) 
+Physical register entries: 48, 64, 96, 128 (default), 31 architectural registers and 17/33/65/97 
+renamed registers 
+
+•  Number of read ports: 2X issue width 
+•  Number of write ports: 1X issue width 
+•  Re-Order Buffer: 16, 32, 64, 96, 128 (default) 
+•  ALUs: 1X issue width 
+•  Branch, multiply, and divide functional unit: 1 per instruction slice 
+•  Number of data cache ports and tag arrays: 1 per instruction slice 
+• 
+
+Execution Queue (XEQ) entries per 1-wide slice: 2 (MUL/DIV), 4 (Branch), 8 (Load/store), 8 (ALUs) 
+Execution Queue (XEQ) entries per 2-wide slice: 4 (MUL/DIV, 8 (Branch), 16 (Load/store), 16 
+(ALUs) 
+Store buffer (STB) and load buffer (LDB): 16, 32 (default), 64 entries 
+
+• 
+
+• 
+
